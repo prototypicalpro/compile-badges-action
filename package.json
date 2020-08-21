@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "⚙️Save all your README badges as SVGs to save bandwidth",
-  "main": "lib/main.js",
+  "main": "lib/entry.js",
   "scripts": {
     "build": "tsc",
     "format": "prettier --write **/*.ts",

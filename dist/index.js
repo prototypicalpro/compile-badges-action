@@ -40,7 +40,7 @@ require('./sourcemap-register.js');module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(198);
+/******/ 		return __webpack_require__(371);
 /******/ 	};
 /******/
 /******/ 	// run startup
@@ -238,6 +238,26 @@ exports.default = run;
 /***/ (function(module) {
 
 module.exports = require("https");
+
+/***/ }),
+
+/***/ 371:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const main_1 = __importDefault(__webpack_require__(198));
+/**
+ * @fileoverview This file serves as the "entry"
+ * you can check out main.ts for the actual
+ * "main" function.
+ */
+main_1.default();
+//# sourceMappingURL=entry.js.map
 
 /***/ }),
 
