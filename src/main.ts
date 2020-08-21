@@ -110,7 +110,7 @@ export default async function run(): Promise<void> {
     const validBadges = deDupedBadges.filter(b => {
       try {
         const url = new URL(b)
-        if (url.protocol !== 'http' && url.protocol !== 'https') {
+        if (url.protocol.startsWith('http') === false) {
           core.warning(`Ignoring non-web badge URL ${b}`)
           return false
         }

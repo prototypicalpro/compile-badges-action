@@ -196,7 +196,7 @@ function run() {
             const validBadges = deDupedBadges.filter(b => {
                 try {
                     const url = new url_1.URL(b);
-                    if (url.protocol !== 'http' && url.protocol !== 'https') {
+                    if (url.protocol.startsWith('http') === false) {
                         core.warning(`Ignoring non-web badge URL ${b}`);
                         return false;
                     }
