@@ -120,6 +120,12 @@ export default async function run(): Promise<void> {
       }
       return true
     })
+    if (!validBadges.length) {
+      core.warning("Didn't find any badges to replace!")
+      return
+    }
+    core.info('Found badge URLs to replace:')
+    for (const b of validBadges) core.info(`\t- ${b}`)
     // fetch each badge
     const paths = await Promise.all(
       validBadges.map(async (b, i) =>

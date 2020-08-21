@@ -207,6 +207,13 @@ function run() {
                 }
                 return true;
             });
+            if (!validBadges.length) {
+                core.warning("Didn't find any badges to replace!");
+                return;
+            }
+            core.info('Found badge URLs to replace:');
+            for (const b of validBadges)
+                core.info(`\t- ${b}`);
             // fetch each badge
             const paths = yield Promise.all(validBadges.map((b, i) => __awaiter(this, void 0, void 0, function* () { return fetchAndWriteBadge(b, path.join(outputSvgDir, `badge-${i}`)); })));
             // replace all instances of each badge url with the new path
