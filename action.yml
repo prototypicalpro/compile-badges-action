@@ -1,11 +1,19 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'compile-badges-action'
+description: '⚙️Save all your README badges as SVGs to save bandwidth'
+author: 'Noah Koontz'
 inputs:
-  milliseconds: # change this
+  input_markdown_file:
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: The file to load and parse for badges to replace
+    default: README.md
+  output_markdown_file:
+    required: true
+    description: The file to write when parsing and replacing is complete
+    default: README.md
+  output_svg_dir:
+    required: true
+    description: The directory to write all the fetched badge SVGs to
+    default: readme
 runs:
   using: 'node12'
   main: 'dist/index.js'
