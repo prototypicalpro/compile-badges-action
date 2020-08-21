@@ -121,8 +121,10 @@ const StreamPipeline = util_1.promisify(stream_1.pipeline);
 function fetchAndWriteBadge(url, filepath) {
     return __awaiter(this, void 0, void 0, function* () {
         const res = yield node_fetch_1.default(url);
-        if (!res.ok || res.headers.get('content-type'))
+        if (!res.ok || !res.headers.get('content-type')) {
             core.warning(`Fetching badge ${url} failed with status code ${res.status}: ${res.statusText}`);
+            return null;
+        }
         const filePathExtension = `${filepath}.${mime.extension(res.headers.get('content-type'))}`;
         yield StreamPipeline(res.body, fs.createWriteStream(filePathExtension));
         return filePathExtension;
@@ -207,6 +209,7 @@ function run() {
                 }
                 return true;
             });
+            // print debugging info
             if (!validBadges.length) {
                 core.warning("Didn't find any badges to replace!");
                 return;
@@ -216,10 +219,14 @@ function run() {
                 core.info(`\t- ${b}`);
             // fetch each badge
             const paths = yield Promise.all(validBadges.map((b, i) => __awaiter(this, void 0, void 0, function* () { return fetchAndWriteBadge(b, path.join(outputSvgDir, `badge-${i}`)); })));
-            // replace all instances of each badge url with the new path
-            const output = replaceUrls(input, deDupedBadges.map((d, i) => {
+            // zip the arrays and filter out null paths
+            const inputPathsAndUrls = deDupedBadges
+                .map((d, i) => {
                 return { url: d, path: paths[i] };
-            }));
+            })
+                .filter(o => o.path !== null);
+            // replace all instances of each badge url with the new path
+            const output = replaceUrls(input, inputPathsAndUrls);
             // write the output to file
             yield fs.promises.writeFile(outputFile, output);
         }

@@ -25,12 +25,14 @@ const enum Inputs {
 async function fetchAndWriteBadge(
   url: string,
   filepath: string
-): Promise<string> {
+): Promise<string | null> {
   const res = await fetch(url)
-  if (!res.ok || res.headers.get('content-type'))
+  if (!res.ok || !res.headers.get('content-type')) {
     core.warning(
       `Fetching badge ${url} failed with status code ${res.status}: ${res.statusText}`
     )
+    return null
+  }
   const filePathExtension = `${filepath}.${mime.extension(
     res.headers.get('content-type') as string
   )}`
@@ -120,6 +122,7 @@ export default async function run(): Promise<void> {
       }
       return true
     })
+    // print debugging info
     if (!validBadges.length) {
       core.warning("Didn't find any badges to replace!")
       return
@@ -132,12 +135,16 @@ export default async function run(): Promise<void> {
         fetchAndWriteBadge(b, path.join(outputSvgDir, `badge-${i}`))
       )
     )
+    // zip the arrays and filter out null paths
+    const inputPathsAndUrls = deDupedBadges
+      .map((d, i) => {
+        return {url: d, path: paths[i]}
+      })
+      .filter(o => o.path !== null)
     // replace all instances of each badge url with the new path
     const output = replaceUrls(
       input,
-      deDupedBadges.map((d, i) => {
-        return {url: d, path: paths[i]}
-      })
+      inputPathsAndUrls as {path: string; url: string}[]
     )
     // write the output to file
     await fs.promises.writeFile(outputFile, output)
