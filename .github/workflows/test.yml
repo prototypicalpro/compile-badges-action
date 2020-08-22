@@ -1,24 +1,48 @@
-name: 'build-test'
-on: # rebuild any PRs and main branch changes
-  pull_request:
-  push:
-    branches:
-      - main
-      - 'releases/*'
+name: 'Build/Test'
+on: [push, pull_request]
 
 jobs:
-  build: # make sure build/ci work properly
-    runs-on: ubuntu-latest
+  test-unit:
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+          - ubuntu-16.04
+          - macos-latest
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - run: |
-          npm install
-      - run: |
-          npm run all
-  test: # make sure the action works on a clean machine without building
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2-beta
         with:
-          milliseconds: 1000
+          node-version: '12'
+      - name: Install Dependencies
+        uses: bahmutov/npm-install@v1
+      - name: Lint
+        run: npm run lint
+      - name: Typescript Build
+        run: npm run build
+      - name: NCC Package
+        run: npm run package
+      - name: Test
+        run: npm run test
+      - name: Coverage
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        uses: codecov/codecov-action@v1
+  test-system:
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+          - ubuntu-16.04
+          - macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Run Action
+        id: repolinter
+        uses: ./
