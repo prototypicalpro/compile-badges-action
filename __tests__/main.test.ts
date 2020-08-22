@@ -335,9 +335,15 @@ describe('run', () => {
     )
 
     scope.done()
-    expect(actual.replace('\r', '')).toEqual(
-      `<!-- badge-compile -->\n![alt text](https://raw.githubusercontent.com/testowner/testrepo/main/__tests__/test-svg-dir/badge-0.svg)\n<!-- badge-compile-stop -->\n`
-    )
+    // deal with funky windows newlines
+    const actualSplit = actual.split('\n').filter(s => s)
+    expect(actualSplit).toMatchObject([
+      expect.stringContaining('<!-- badge-compile -->'),
+      expect.stringContaining(
+        '![alt text](https://raw.githubusercontent.com/testowner/testrepo/main/__tests__/test-svg-dir/badge-0.svg)'
+      ),
+      expect.stringContaining('<!-- badge-compile-stop -->')
+    ])
     expect(actualSvg).toEqual(expectedSvg)
     expect(process.exitCode).toBeFalsy()
   })

@@ -97,9 +97,14 @@ describe('integration', () => {
       'utf-8'
     )
     expect(code).toBeFalsy()
-    expect(actual.replace('\r', '')).toEqual(
-      `<!-- badge-compile -->\n![alt text](https://raw.githubusercontent.com/testowner/testrepo/main/test-svg-dir/badge-0.svg)\n<!-- badge-compile-stop -->\n`
-    )
+    const actualSplit = actual.split('\n').filter(s => s)
+    expect(actualSplit).toMatchObject([
+      expect.stringContaining('<!-- badge-compile -->'),
+      expect.stringContaining(
+        '![alt text](https://raw.githubusercontent.com/testowner/testrepo/main/test-svg-dir/badge-0.svg)'
+      ),
+      expect.stringContaining('<!-- badge-compile-stop -->')
+    ])
     expect(actualSvg).toEqual(expectedSvg)
   })
 })
