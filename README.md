@@ -1,5 +1,6 @@
 # Compile Badges Action v1
 
+[![GitHub Marketplace version](https://img.shields.io/github/release/prototypicalpro/compile-badges-action.svg?label=Marketplace&logo=github)](https://github.com/marketplace/actions/compile-badges-action)
 ![Build/Test](https://github.com/prototypicalpro/compile-badges-action/workflows/Build/Test/badge.svg?event=push)
 [![codecov](https://codecov.io/gh/prototypicalpro/compile-badges-action/branch/main/graph/badge.svg)](https://codecov.io/gh/prototypicalpro/compile-badges-action)
 [![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/prototypicalpro/compile-badges-action.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/prototypicalpro/compile-badges-action/context:javascript)
