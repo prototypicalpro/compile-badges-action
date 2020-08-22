@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/prototypicalpro/compile-badges-action/compare/v1.0.1...v1.0.2) (2020-08-22)
+
+
+### Bug Fixes
+
+* add electron user agent header to fetch calls ([24a7202](https://github.com/prototypicalpro/compile-badges-action/commit/24a720260497a9d695818670042436b77d32423c))
+
 ## [1.0.1](https://github.com/prototypicalpro/compile-badges-action/compare/v1.0.0...v1.0.1) (2020-08-22)
 
 
