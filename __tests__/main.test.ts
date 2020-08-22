@@ -335,7 +335,7 @@ describe('run', () => {
     )
 
     scope.done()
-    expect(actual).toEqual(
+    expect(actual.replace('\r', '')).toEqual(
       `<!-- badge-compile -->\n![alt text](https://raw.githubusercontent.com/testowner/testrepo/main/__tests__/test-svg-dir/badge-0.svg)\n<!-- badge-compile-stop -->\n`
     )
     expect(actualSvg).toEqual(expectedSvg)

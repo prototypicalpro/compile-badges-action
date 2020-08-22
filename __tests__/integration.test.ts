@@ -97,7 +97,7 @@ describe('integration', () => {
       'utf-8'
     )
     expect(code).toBeFalsy()
-    expect(actual).toEqual(
+    expect(actual.replace('\r', '')).toEqual(
       `<!-- badge-compile -->\n![alt text](https://raw.githubusercontent.com/testowner/testrepo/main/test-svg-dir/badge-0.svg)\n<!-- badge-compile-stop -->\n`
     )
     expect(actualSvg).toEqual(expectedSvg)
