@@ -14,23 +14,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Setup Node
         uses: actions/setup-node@v2-beta
         with:
           node-version: '12'
+
       - name: Install Dependencies
         uses: bahmutov/npm-install@v1
+
       - name: Lint
         run: npm run lint
+
       - name: Typescript Build
         run: npm run build
+
       - name: NCC Package
         run: npm run package
+
       - name: Test
         run: npm run test
-      - name: Coverage
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: codecov/codecov-action@v1
+
   test-system:
     strategy:
       matrix:
@@ -43,6 +47,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Run Action
-        id: repolinter
         uses: ./
