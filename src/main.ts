@@ -5,39 +5,16 @@ import {pipeline} from 'stream'
 import fetch from 'node-fetch'
 import * as path from 'path'
 import * as mime from 'mime-types'
-import {URL} from 'url'
+import * as urlLib from 'url'
 
 const StreamPipeline = promisify(pipeline)
 
-const enum Inputs {
+export const enum Inputs {
   INPUT_FILE = 'input_markdown_file',
   OUTPUT_MARKDOWN_FILE = 'output_markdown_file',
-  OUTPUT_SVG_DIR = 'output_svg_dir'
-}
-
-/**
- * Fetch an arbitrary image and write it to a file. Automagically
- * determines the file extension from the content-type header.
- * @param url The URL to fetch the image from.
- * @param filepath The filepath to write the image too, minus the extention
- * @returns the full path of the fetched file
- */
-async function fetchAndWriteBadge(
-  url: string,
-  filepath: string
-): Promise<string | null> {
-  const res = await fetch(url)
-  if (!res.ok || !res.headers.get('content-type')) {
-    core.warning(
-      `Fetching badge ${url} failed with status code ${res.status}: ${res.statusText}`
-    )
-    return null
-  }
-  const filePathExtension = `${filepath}.${mime.extension(
-    res.headers.get('content-type') as string
-  )}`
-  await StreamPipeline(res.body, fs.createWriteStream(filePathExtension))
-  return filePathExtension
+  OUTPUT_SVG_DIR = 'output_svg_dir',
+  CUR_REPO = 'current_repository',
+  CUR_BRANCH = 'current_branch'
 }
 
 /**
@@ -54,6 +31,7 @@ async function fetchAndWriteBadge(
  * ...
  * ```
  * The above input in the following output: ['https://capture-this-url.com']
+ *
  * @param input The markdown string to parse for URLs
  * @returns An array of URLs found in the document.
  */
@@ -73,13 +51,42 @@ export function scanForBadges(input: string): string[] {
 }
 
 /**
+ * Filters a list of URLs by removing duplicates, removing invalid URLs,
+ * and restricting the protocol type to http or https. This filter
+ * is designed to remove non-image URLs and dupes.
+ *
+ * @param urls A list of unfiltered URLs to filter
+ * @returns A filtered list of valid badge URLs
+ */
+export function filterBadgeUrls(urls: string[]): string[] {
+  // deduplicate that array (neat little algorithm)
+  const deDupedBadges = [...new Set(urls)]
+  // remove all invalid or non-http links
+  return deDupedBadges.filter(b => {
+    try {
+      const badgeUrl = new urlLib.URL(b)
+      if (badgeUrl.protocol.startsWith('http') === false) {
+        core.warning(`Ignoring non-web badge URL ${b}`)
+        return false
+      }
+    } catch {
+      core.warning(`Ignoring invalid badge URL ${b}`)
+      return false
+    }
+    return true
+  })
+}
+
+/**
  * Replace all instances of a markdown image URL (ex. ![](image.png))
- * with a respective file path.
+ * with a respective file path. Also strips whitespace from the beginning
+ * and end of the URL.
+ *
  * @param input The string to replace
  * @param urls The list of URLs and thier associated paths
  * @returns The string with replacements made
  */
-export function replaceUrls(
+export function replaceBadgeUrls(
   input: string,
   urls: {path: string; url: string}[]
 ): string {
@@ -92,6 +99,42 @@ export function replaceUrls(
   )
 }
 
+/**
+ * Fetch an arbitrary image and write it to a file. Automagically
+ * determines the file extension from the content-type header.
+ *
+ * @param url The URL to fetch the image from.
+ * @param filepath The filepath to write the image too, minus the extention
+ * @returns the full path of the fetched file
+ */
+export async function fetchAndWriteBadge(
+  url: string,
+  filepath: string
+): Promise<string | null> {
+  let res
+  try {
+    res = await fetch(url)
+  } catch (e) {
+    core.warning(`Fetching badge ${url} failed with error ${e.toString()}`)
+    return null
+  }
+  // more error checks
+  if (!res.ok || !res.headers.get('content-type')) {
+    if (!res.ok)
+      core.warning(
+        `Fetching badge ${url} failed with status code ${res.status}: ${res.statusText}`
+      )
+    else core.warning(`Recieved no content-type header from badge ${url}`)
+    return null
+  }
+  // looks like we're good! write the file
+  const filePathExtension = `${filepath}.${mime.extension(
+    res.headers.get('content-type') as string
+  )}`
+  await StreamPipeline(res.body, fs.createWriteStream(filePathExtension))
+  return filePathExtension
+}
+
 export default async function run(): Promise<void> {
   try {
     // get inputs
@@ -100,28 +143,17 @@ export default async function run(): Promise<void> {
       required: true
     })
     const outputSvgDir = core.getInput(Inputs.OUTPUT_SVG_DIR, {required: true})
-    // create the SVG output directory
-    await fs.promises.mkdir(outputSvgDir, {recursive: true})
+    const repo = core.getInput(Inputs.CUR_REPO, {required: true})
+    const ref = core.getInput(Inputs.CUR_BRANCH, {required: true})
+    const branch = ref.split('/').pop()
+    if (!branch) throw new Error(`Could not parse supplied ref "${ref}"`)
+    // generate the base URL where all realative paths will be joined with
+    const urlBase = `https://raw.githubusercontent.com/${repo}/${branch}/`
     // read the input file
     const input = await fs.promises.readFile(inputFile, 'utf-8')
     // scan it for relavant links
     const badges = scanForBadges(input)
-    // deduplicate that array (neat little algorithm)
-    const deDupedBadges = [...new Set(badges)]
-    // remove all invalid or non-http links
-    const validBadges = deDupedBadges.filter(b => {
-      try {
-        const url = new URL(b)
-        if (url.protocol.startsWith('http') === false) {
-          core.warning(`Ignoring non-web badge URL ${b}`)
-          return false
-        }
-      } catch {
-        core.warning(`Ignoring invalid badge URL ${b}`)
-        return false
-      }
-      return true
-    })
+    const validBadges = filterBadgeUrls(badges)
     // print debugging info
     if (!validBadges.length) {
       core.warning("Didn't find any badges to replace!")
@@ -129,6 +161,8 @@ export default async function run(): Promise<void> {
     }
     core.info('Found badge URLs to replace:')
     for (const b of validBadges) core.info(`\t- ${b}`)
+    // create the SVG output directory
+    await fs.promises.mkdir(outputSvgDir, {recursive: true})
     // fetch each badge
     const paths = await Promise.all(
       validBadges.map(async (b, i) =>
@@ -136,13 +170,13 @@ export default async function run(): Promise<void> {
       )
     )
     // zip the arrays and filter out null paths
-    const inputPathsAndUrls = deDupedBadges
+    const inputPathsAndUrls = validBadges
+      .filter((d, i) => paths[i] !== null)
       .map((d, i) => {
-        return {url: d, path: paths[i]}
+        return {url: d, path: urlLib.resolve(urlBase, paths[i] as string)}
       })
-      .filter(o => o.path !== null)
     // replace all instances of each badge url with the new path
-    const output = replaceUrls(
+    const output = replaceBadgeUrls(
       input,
       inputPathsAndUrls as {path: string; url: string}[]
     )

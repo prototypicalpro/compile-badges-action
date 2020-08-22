@@ -101,7 +101,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.replaceUrls = exports.scanForBadges = void 0;
+exports.fetchAndWriteBadge = exports.replaceBadgeUrls = exports.filterBadgeUrls = exports.scanForBadges = void 0;
 const core = __importStar(__webpack_require__(470));
 const fs = __importStar(__webpack_require__(747));
 const util_1 = __webpack_require__(669);
@@ -109,27 +109,8 @@ const stream_1 = __webpack_require__(413);
 const node_fetch_1 = __importDefault(__webpack_require__(454));
 const path = __importStar(__webpack_require__(622));
 const mime = __importStar(__webpack_require__(779));
-const url_1 = __webpack_require__(835);
+const urlLib = __importStar(__webpack_require__(835));
 const StreamPipeline = util_1.promisify(stream_1.pipeline);
-/**
- * Fetch an arbitrary image and write it to a file. Automagically
- * determines the file extension from the content-type header.
- * @param url The URL to fetch the image from.
- * @param filepath The filepath to write the image too, minus the extention
- * @returns the full path of the fetched file
- */
-function fetchAndWriteBadge(url, filepath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const res = yield node_fetch_1.default(url);
-        if (!res.ok || !res.headers.get('content-type')) {
-            core.warning(`Fetching badge ${url} failed with status code ${res.status}: ${res.statusText}`);
-            return null;
-        }
-        const filePathExtension = `${filepath}.${mime.extension(res.headers.get('content-type'))}`;
-        yield StreamPipeline(res.body, fs.createWriteStream(filePathExtension));
-        return filePathExtension;
-    });
-}
 /**
  * Scans a markdown document for blocks denotated by a specific markdown comment
  * (<!-- badge-compile -->) and extracts all markdown image links from that
@@ -144,6 +125,7 @@ function fetchAndWriteBadge(url, filepath) {
  * ...
  * ```
  * The above input in the following output: ['https://capture-this-url.com']
+ *
  * @param input The markdown string to parse for URLs
  * @returns An array of URLs found in the document.
  */
@@ -163,20 +145,83 @@ function scanForBadges(input) {
 }
 exports.scanForBadges = scanForBadges;
 /**
+ * Filters a list of URLs by removing duplicates, removing invalid URLs,
+ * and restricting the protocol type to http or https. This filter
+ * is designed to remove non-image URLs and dupes.
+ *
+ * @param urls A list of unfiltered URLs to filter
+ * @returns A filtered list of valid badge URLs
+ */
+function filterBadgeUrls(urls) {
+    // deduplicate that array (neat little algorithm)
+    const deDupedBadges = [...new Set(urls)];
+    // remove all invalid or non-http links
+    return deDupedBadges.filter(b => {
+        try {
+            const badgeUrl = new urlLib.URL(b);
+            if (badgeUrl.protocol.startsWith('http') === false) {
+                core.warning(`Ignoring non-web badge URL ${b}`);
+                return false;
+            }
+        }
+        catch (_a) {
+            core.warning(`Ignoring invalid badge URL ${b}`);
+            return false;
+        }
+        return true;
+    });
+}
+exports.filterBadgeUrls = filterBadgeUrls;
+/**
  * Replace all instances of a markdown image URL (ex. ![](image.png))
- * with a respective file path.
+ * with a respective file path. Also strips whitespace from the beginning
+ * and end of the URL.
+ *
  * @param input The string to replace
  * @param urls The list of URLs and thier associated paths
  * @returns The string with replacements made
  */
-function replaceUrls(input, urls) {
+function replaceBadgeUrls(input, urls) {
     const LINK_SCAN = /!\[([^\]]+)]\(\s*([^\s)]+)\s*\)/g;
     // convert the urls array into a dictionary
     const dict = new Map(urls.map(u => [u.url, u.path]));
     // search for markdown image links
     return input.replace(LINK_SCAN, (_m, alt, url) => dict.has(url) ? `![${alt}](${dict.get(url)})` : `![${alt}](${url})`);
 }
-exports.replaceUrls = replaceUrls;
+exports.replaceBadgeUrls = replaceBadgeUrls;
+/**
+ * Fetch an arbitrary image and write it to a file. Automagically
+ * determines the file extension from the content-type header.
+ *
+ * @param url The URL to fetch the image from.
+ * @param filepath The filepath to write the image too, minus the extention
+ * @returns the full path of the fetched file
+ */
+function fetchAndWriteBadge(url, filepath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let res;
+        try {
+            res = yield node_fetch_1.default(url);
+        }
+        catch (e) {
+            core.warning(`Fetching badge ${url} failed with error ${e.toString()}`);
+            return null;
+        }
+        // more error checks
+        if (!res.ok || !res.headers.get('content-type')) {
+            if (!res.ok)
+                core.warning(`Fetching badge ${url} failed with status code ${res.status}: ${res.statusText}`);
+            else
+                core.warning(`Recieved no content-type header from badge ${url}`);
+            return null;
+        }
+        // looks like we're good! write the file
+        const filePathExtension = `${filepath}.${mime.extension(res.headers.get('content-type'))}`;
+        yield StreamPipeline(res.body, fs.createWriteStream(filePathExtension));
+        return filePathExtension;
+    });
+}
+exports.fetchAndWriteBadge = fetchAndWriteBadge;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -186,29 +231,18 @@ function run() {
                 required: true
             });
             const outputSvgDir = core.getInput("output_svg_dir" /* OUTPUT_SVG_DIR */, { required: true });
-            // create the SVG output directory
-            yield fs.promises.mkdir(outputSvgDir, { recursive: true });
+            const repo = core.getInput("current_repository" /* CUR_REPO */, { required: true });
+            const ref = core.getInput("current_branch" /* CUR_BRANCH */, { required: true });
+            const branch = ref.split('/').pop();
+            if (!branch)
+                throw new Error(`Could not parse supplied ref "${ref}"`);
+            // generate the base URL where all realative paths will be joined with
+            const urlBase = `https://raw.githubusercontent.com/${repo}/${branch}/`;
             // read the input file
             const input = yield fs.promises.readFile(inputFile, 'utf-8');
             // scan it for relavant links
             const badges = scanForBadges(input);
-            // deduplicate that array (neat little algorithm)
-            const deDupedBadges = [...new Set(badges)];
-            // remove all invalid or non-http links
-            const validBadges = deDupedBadges.filter(b => {
-                try {
-                    const url = new url_1.URL(b);
-                    if (url.protocol.startsWith('http') === false) {
-                        core.warning(`Ignoring non-web badge URL ${b}`);
-                        return false;
-                    }
-                }
-                catch (_a) {
-                    core.warning(`Ignoring invalid badge URL ${b}`);
-                    return false;
-                }
-                return true;
-            });
+            const validBadges = filterBadgeUrls(badges);
             // print debugging info
             if (!validBadges.length) {
                 core.warning("Didn't find any badges to replace!");
@@ -217,16 +251,18 @@ function run() {
             core.info('Found badge URLs to replace:');
             for (const b of validBadges)
                 core.info(`\t- ${b}`);
+            // create the SVG output directory
+            yield fs.promises.mkdir(outputSvgDir, { recursive: true });
             // fetch each badge
             const paths = yield Promise.all(validBadges.map((b, i) => __awaiter(this, void 0, void 0, function* () { return fetchAndWriteBadge(b, path.join(outputSvgDir, `badge-${i}`)); })));
             // zip the arrays and filter out null paths
-            const inputPathsAndUrls = deDupedBadges
+            const inputPathsAndUrls = validBadges
+                .filter((d, i) => paths[i] !== null)
                 .map((d, i) => {
-                return { url: d, path: paths[i] };
-            })
-                .filter(o => o.path !== null);
+                return { url: d, path: urlLib.resolve(urlBase, paths[i]) };
+            });
             // replace all instances of each badge url with the new path
-            const output = replaceUrls(input, inputPathsAndUrls);
+            const output = replaceBadgeUrls(input, inputPathsAndUrls);
             // write the output to file
             yield fs.promises.writeFile(outputFile, output);
         }
