@@ -42,7 +42,7 @@ jobs:
       - name: Push To Master
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: Compile README
+          commit_message: Compile README [skip ci]
           file_pattern: README-compiled.md readme/*
 
 ```
