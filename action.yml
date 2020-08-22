@@ -10,7 +10,7 @@ inputs:
     required: false
     description: The file to write when parsing and replacing is complete
     default: README.md
-  output_svg_dir:
+  output_image_dir:
     required: false
     description: |
       The directory to write all the fetched badge SVGs to. This path must

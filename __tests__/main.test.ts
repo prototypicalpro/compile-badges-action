@@ -304,7 +304,7 @@ describe('run', () => {
       'TEST_INPUT.md'
     )
     process.env[getInputName(Inputs.OUTPUT_MARKDOWN_FILE)] = filePath
-    process.env[getInputName(Inputs.OUTPUT_SVG_DIR)] = '__tests__/test-svg-dir'
+    process.env[getInputName(Inputs.OUTPUT_IMG_DIR)] = '__tests__/test-svg-dir'
   })
 
   afterEach(async () => {
@@ -376,7 +376,7 @@ describe('run', () => {
   })
 
   it('throws if no output dir is supplied', async () => {
-    delete process.env[getInputName(Inputs.OUTPUT_SVG_DIR)]
+    delete process.env[getInputName(Inputs.OUTPUT_IMG_DIR)]
 
     await run()
 

@@ -76,7 +76,7 @@ describe('integration', () => {
       'TEST_INPUT.md'
     )
     baseEnv[getInputName(Inputs.OUTPUT_MARKDOWN_FILE)] = filePath
-    baseEnv[getInputName(Inputs.OUTPUT_SVG_DIR)] = 'test-svg-dir'
+    baseEnv[getInputName(Inputs.OUTPUT_IMG_DIR)] = 'test-svg-dir'
   })
 
   afterEach(async () => {

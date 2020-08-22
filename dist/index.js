@@ -230,7 +230,7 @@ function run() {
             const outputFile = core.getInput("output_markdown_file" /* OUTPUT_MARKDOWN_FILE */, {
                 required: true
             });
-            const outputSvgDir = core.getInput("output_svg_dir" /* OUTPUT_SVG_DIR */, { required: true });
+            const outputSvgDir = core.getInput("output_image_dir" /* OUTPUT_IMG_DIR */, { required: true });
             const repo = core.getInput("current_repository" /* CUR_REPO */, { required: true });
             const ref = core.getInput("current_branch" /* CUR_BRANCH */, { required: true });
             const branch = ref.split('/').pop();

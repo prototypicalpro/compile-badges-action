@@ -12,7 +12,7 @@ const StreamPipeline = promisify(pipeline)
 export const enum Inputs {
   INPUT_FILE = 'input_markdown_file',
   OUTPUT_MARKDOWN_FILE = 'output_markdown_file',
-  OUTPUT_SVG_DIR = 'output_svg_dir',
+  OUTPUT_IMG_DIR = 'output_image_dir',
   CUR_REPO = 'current_repository',
   CUR_BRANCH = 'current_branch'
 }
@@ -142,7 +142,7 @@ export default async function run(): Promise<void> {
     const outputFile = core.getInput(Inputs.OUTPUT_MARKDOWN_FILE, {
       required: true
     })
-    const outputSvgDir = core.getInput(Inputs.OUTPUT_SVG_DIR, {required: true})
+    const outputSvgDir = core.getInput(Inputs.OUTPUT_IMG_DIR, {required: true})
     const repo = core.getInput(Inputs.CUR_REPO, {required: true})
     const ref = core.getInput(Inputs.CUR_BRANCH, {required: true})
     const branch = ref.split('/').pop()
