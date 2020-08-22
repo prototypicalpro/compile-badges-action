@@ -33,3 +33,6 @@ inputs:
 runs:
   using: 'node12'
   main: 'dist/index.js'
+branding:
+  color: green
+  icon: archive
