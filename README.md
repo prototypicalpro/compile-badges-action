@@ -1,7 +1,8 @@
 # Compile Badges Action v1
 
 ![Build/Test](https://github.com/prototypicalpro/compile-badges-action/workflows/Build/Test/badge.svg?event=push)
-
+[![codecov](https://codecov.io/gh/prototypicalpro/compile-badges-action/branch/main/graph/badge.svg)](https://codecov.io/gh/prototypicalpro/compile-badges-action)
+[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/prototypicalpro/compile-badges-action.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/prototypicalpro/compile-badges-action/context:javascript)
 
 This action converts README badges into local copies in the repository. The goal of this action is to reduce bandwidth usage of shields.io for badge-heavy GitHub profile READMEs such as [this one](https://github.com/prototypicalpro/prototypicalpro).
 
