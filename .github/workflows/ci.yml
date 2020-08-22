@@ -1,0 +1,100 @@
+name: 'CI'
+on: [push, pull_request]
+
+jobs:
+  test-unit-and-integration:
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+          - ubuntu-16.04
+          - macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v2-beta
+        with:
+          node-version: '12'
+
+      - name: Install Dependencies
+        uses: bahmutov/npm-install@v1
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typescript Build
+        run: npm run build
+
+      - name: NCC Package
+        run: npm run package
+
+      - name: Test
+        run: npm run test
+
+  test-system:
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+          - ubuntu-16.04
+          - macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Run Action
+        uses: ./
+
+  release:
+    needs: [test-system, test-unit-and-integration]
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v2-beta
+        with:
+          node-version: '12'
+
+      - name: Install Dependencies
+        uses: bahmutov/npm-install@v1
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typescript Build
+        run: npm run build
+
+      - name: NCC Package
+        run: npm run package
+
+      - name: Test
+        run: npm run test
+
+      - name: Coverage
+        uses: codecov/codecov-action@v1
+
+      - name: Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v2
+        with:
+          extra_plugins: |
+            @semantic-release/git
+            @semantic-release/changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Major Version Tag
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: "git push https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git HEAD:refs/heads/v${{steps.semantic.outputs.new_release_major_version}}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
