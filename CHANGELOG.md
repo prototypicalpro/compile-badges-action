@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/prototypicalpro/compile-badges-action/compare/v1.0.0...v1.0.1) (2020-08-22)
+
+
+### Bug Fixes
+
+* add actions branding ([c1544e8](https://github.com/prototypicalpro/compile-badges-action/commit/c1544e87e87e22fecde4e2896a3d70007613fd0c))
+* add author to package.json ([4a9d009](https://github.com/prototypicalpro/compile-badges-action/commit/4a9d009c13e3b7f64ef585e54ee795e5899bc7ad))
+
 # 1.0.0 (2020-08-22)
 
 
