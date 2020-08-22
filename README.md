@@ -1,101 +1,100 @@
-<p align="center">
-  <a href="https://github.com/actions/typescript-action/actions"><img alt="typescript-action status" src="https://github.com/actions/typescript-action/workflows/build-test/badge.svg"></a>
-</p>
+# Compile Badges Action v1
 
-# Create a JavaScript Action using TypeScript
+![Build/Test](https://github.com/prototypicalpro/compile-badges-action/workflows/Build/Test/badge.svg?event=push)
 
-Use this template to bootstrap the creation of a TypeScript action.:rocket:
 
-This template includes compilation support, tests, a validation workflow, publishing, and versioning guidance.  
+This action converts README badges into local copies in the repository. The goal of this action is to reduce bandwidth usage of shields.io for badge-heavy GitHub profile READMEs such as [this one](https://github.com/prototypicalpro/prototypicalpro).
 
-If you are new, there's also a simpler introduction.  See the [Hello World JavaScript Action](https://github.com/actions/hello-world-javascript-action)
+## Usage
 
-## Create an action from this template
-
-Click the `Use this Template` and provide the new repo details for your action
-
-## Code in Main
-
-Install the dependencies  
-```bash
-$ npm install
-```
-
-Build the typescript and package it for distribution
-```bash
-$ npm run build && npm run package
-```
-
-Run the tests :heavy_check_mark:  
-```bash
-$ npm test
-
- PASS  ./index.test.js
-  ✓ throws invalid number (3ms)
-  ✓ wait 500 ms (504ms)
-  ✓ test runs (95ms)
-
+You can use `<!-- badge-compile -->` and `<!-- badge-compile-stop -->` tags to indicate which badges should be compiled in your `README`:
+```markdown
+...
+<!-- badge-compile -->
+![a badge](https://my-badge.com)
+[![another badge with a link](https://my-other-badge.com)](https://my-project.com)
+<!-- badge-compile-stop -->
 ...
 ```
-
-## Change action.yml
-
-The action.yml contains defines the inputs and output for your action.
-
-Update the action.yml with your name, description, inputs and outputs for your action.
-
-See the [documentation](https://help.github.com/en/articles/metadata-syntax-for-github-actions)
-
-## Change the Code
-
-Most toolkit and CI/CD operations involve async operations so the action is run in an async function.
-
-```javascript
-import * as core from '@actions/core';
-...
-
-async function run() {
-  try { 
-      ...
-  } 
-  catch (error) {
-    core.setFailed(error.message);
-  }
-}
-
-run()
-```
-
-See the [toolkit documentation](https://github.com/actions/toolkit/blob/master/README.md#packages) for the various packages.
-
-## Publish to a distribution branch
-
-Actions are run from GitHub repos so we will checkin the packed dist folder. 
-
-Then run [ncc](https://github.com/zeit/ncc) and push the results:
-```bash
-$ npm run package
-$ git add dist
-$ git commit -a -m "prod dependencies"
-$ git push origin releases/v1
-```
-
-Your action is now published! :rocket: 
-
-See the [versioning documentation](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-
-## Validate
-
-You can now validate the action by referencing `./` in a workflow in your repo (see [test.yml](.github/workflows/test.yml))
-
+Once these tags are in place, add the following workflow file to your `.github/workflows` folder:
 ```yaml
-uses: ./
-with:
-  milliseconds: 1000
+
+name: 'Compile Badges'
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  repolinter-action:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Compile Badges
+        uses: prototypicalpro/compile-badges@v1
+        with:
+          input_markdown_file: README.md
+          output_markdown_file: README-compiled.md
+      - name: Push To Master
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Compile README
+          file_pattern: README-compiled.md readme/*
+
+```
+This workflow will then download and save each badge to a `readme` folder in the current repository. Once this is complete, the action will replace the badge URLs in the README with ones pointing to githubusercontent.com. Finally, this workflow will use [stefanzweifel/git-auto-commit-action](https://github.com/stefanzweifel/git-auto-commit-action) to commit the new markdown file and downloaded badges to the current branch. Note that this action only modifies the local filesystem, and it is up to the workflow creator to ensure the changes end up in source control.
+
+ The final result is a `README-compiled.md` file that looks like so:
+```markdown
+...
+<!-- badge-compile -->
+![a badge](https://raw.githubusercontent.com/<user>/<repo>/<branch>/readme/badge-0.svg)
+[![another badge with a link](https://raw.githubusercontent.com/<user>/<repo>/<branch>/readme/badge-1.svg)](https://my-project.com)
+<!-- badge-compile-stop -->
+...
+```
+And you're all set!
+
+## Configuration
+
+This action takes the following inputs:
+```yaml
+- uses: prototypicalpro/compile-badges-action@v1
+  with:
+    # The markdown file to load and parse for badges.
+    #
+    # Default: README.md
+    input_markdown_file: ''
+
+    # The markdown file to write when parsing and replacing is complete.
+    #
+    # Default: README.md
+    output_markdown_file: ''
+
+    # The directory to write all the fetched badge images to. Due to how
+    # the content URLs are generated, this path must be relative and
+    # contained in the current repository.
+    #
+    # Default: readme
+    output_image_dir: ''
+
+    # The current repository in owner/name format. This value is used to
+    # generate URLs to raw.githubusercontent.com from a relative path in
+    # the repository. It is recommended this be left as the default value.
+    #
+    # Default: ${{ github.repository }}
+    output_image_dir: ''
+
+    # The current branch/ref in github.ref format. This value is used to
+    # generate URLs to raw.githubusercontent.com from a relative path in
+    # the repository. It is recommended this be left as the default value.
+    #
+    # Default: ${{ github.ref }}
+    current_branch: ''
 ```
 
-See the [actions tab](https://github.com/actions/javascript-action/actions) for runs of this action! :rocket:
+## Example
 
-## Usage:
-
-After testing you can [create a v1 tag](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md) to reference the stable and latest V1 action
+This action is used to compile badges on my personal [GitHub profile README](https://github.com/prototypicalpro/prototypicalpro).
