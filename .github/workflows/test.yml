@@ -2,7 +2,7 @@ name: 'Build/Test'
 on: [push, pull_request]
 
 jobs:
-  test-unit:
+  test-unit-and-integration:
     strategy:
       matrix:
         os:
