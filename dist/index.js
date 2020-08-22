@@ -111,6 +111,8 @@ const path = __importStar(__webpack_require__(622));
 const mime = __importStar(__webpack_require__(779));
 const urlLib = __importStar(__webpack_require__(835));
 const StreamPipeline = util_1.promisify(stream_1.pipeline);
+// An Electron 2.0 running on Linux, so shields.io doesn't block us
+const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/3.4.1 Chrome/61.0.3163.100 Electron/2.0.18 Safari/537.36';
 /**
  * Scans a markdown document for blocks denotated by a specific markdown comment
  * (<!-- badge-compile -->) and extracts all markdown image links from that
@@ -201,7 +203,11 @@ function fetchAndWriteBadge(url, filepath) {
     return __awaiter(this, void 0, void 0, function* () {
         let res;
         try {
-            res = yield node_fetch_1.default(url);
+            res = yield node_fetch_1.default(url, {
+                headers: {
+                    'User-Agent': USER_AGENT
+                }
+            });
         }
         catch (e) {
             core.warning(`Fetching badge ${url} failed with error ${e.toString()}`);

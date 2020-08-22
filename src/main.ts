@@ -17,6 +17,10 @@ export const enum Inputs {
   CUR_BRANCH = 'current_branch'
 }
 
+// An Electron 2.0 running on Linux, so shields.io doesn't block us
+const USER_AGENT =
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/3.4.1 Chrome/61.0.3163.100 Electron/2.0.18 Safari/537.36'
+
 /**
  * Scans a markdown document for blocks denotated by a specific markdown comment
  * (<!-- badge-compile -->) and extracts all markdown image links from that
@@ -113,7 +117,11 @@ export async function fetchAndWriteBadge(
 ): Promise<string | null> {
   let res
   try {
-    res = await fetch(url)
+    res = await fetch(url, {
+      headers: {
+        'User-Agent': USER_AGENT
+      }
+    })
   } catch (e) {
     core.warning(`Fetching badge ${url} failed with error ${e.toString()}`)
     return null
