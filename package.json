@@ -25,7 +25,7 @@
   "author": "Noah Koontz <@prototypicalpro>",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.2.4",
+    "@actions/core": "^1.2.5",
     "@types/rimraf": "^3.0.0",
     "@types/node-fetch": "^2.5.7",
     "@types/mime-types": "^2.1.0",
