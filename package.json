@@ -1,6 +1,6 @@
 {
   "name": "compile-badges-action",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "⚙️Save all your README badges as SVGs to save bandwidth",
   "main": "lib/entry.js",
