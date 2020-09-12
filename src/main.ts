@@ -92,7 +92,7 @@ export function filterBadgeUrls(urls: string[]): string[] {
  */
 export function replaceBadgeUrls(
   input: string,
-  urls: {path: string; url: string}[]
+  urls: Array<{path: string; url: string}>
 ): string {
   const LINK_SCAN = /!\[([^\]]+)]\(\s*([^\s)]+)\s*\)/g
   // convert the urls array into a dictionary
@@ -186,7 +186,7 @@ export default async function run(): Promise<void> {
     // replace all instances of each badge url with the new path
     const output = replaceBadgeUrls(
       input,
-      inputPathsAndUrls as {path: string; url: string}[]
+      inputPathsAndUrls as Array<{path: string; url: string}>
     )
     // write the output to file
     await fs.promises.writeFile(outputFile, output)
