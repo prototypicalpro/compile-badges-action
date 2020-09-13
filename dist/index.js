@@ -101,7 +101,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fetchAndWriteBadge = exports.replaceBadgeUrls = exports.filterBadgeUrls = exports.scanForBadges = void 0;
+exports.fetchAndWriteBadge = exports.replaceBadgeUrls = exports.generateBadgeUrl = exports.filterBadgeUrls = exports.scanForBadges = void 0;
 const core = __importStar(__webpack_require__(470));
 const fs = __importStar(__webpack_require__(747));
 const util_1 = __webpack_require__(669);
@@ -110,6 +110,7 @@ const node_fetch_1 = __importDefault(__webpack_require__(454));
 const path = __importStar(__webpack_require__(622));
 const mime = __importStar(__webpack_require__(779));
 const urlLib = __importStar(__webpack_require__(835));
+const compile_1 = __importDefault(__webpack_require__(882));
 const StreamPipeline = util_1.promisify(stream_1.pipeline);
 // An Electron 2.0 running on Linux, so shields.io doesn't block us
 const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/3.4.1 Chrome/61.0.3163.100 Electron/2.0.18 Safari/537.36';
@@ -175,6 +176,26 @@ function filterBadgeUrls(urls) {
 }
 exports.filterBadgeUrls = filterBadgeUrls;
 /**
+ * Generate a new path for a badge based on the provided options
+ *
+ * @param template The URL template to build the URL with.
+ * @param repo The current repository name
+ * @param branch The current branch name (not ref)
+ * @param badgePath The path badges are being written to
+ * @param badge The filename of the badge being written
+ */
+function generateBadgeUrl(template, repo, branch, badgePath, badge) {
+    return template({
+        repo,
+        branch,
+        path: path.posix
+            .normalize(path.posix.join(...badgePath.split(path.sep)))
+            .replace(/(\/$)|(^\.?\/)/g, ''),
+        badge
+    });
+}
+exports.generateBadgeUrl = generateBadgeUrl;
+/**
  * Replace all instances of a markdown image URL (ex. ![](image.png))
  * with a respective file path. Also strips whitespace from the beginning
  * and end of the URL.
@@ -197,7 +218,7 @@ exports.replaceBadgeUrls = replaceBadgeUrls;
  *
  * @param url The URL to fetch the image from.
  * @param filepath The filepath to write the image too, minus the extention
- * @returns the full path of the fetched file
+ * @returns the relative path of the fetched file
  */
 function fetchAndWriteBadge(url, filepath) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -242,8 +263,7 @@ function run() {
             const branch = ref.split('/').pop();
             if (!branch)
                 throw new Error(`Could not parse supplied ref "${ref}"`);
-            // generate the base URL where all realative paths will be joined with
-            const urlBase = `https://raw.githubusercontent.com/${repo}/${branch}/`;
+            const template = compile_1.default(core.getInput("badge_url_template" /* URL */, { required: true }));
             // read the input file
             const input = yield fs.promises.readFile(inputFile, 'utf-8');
             // scan it for relavant links
@@ -261,11 +281,15 @@ function run() {
             yield fs.promises.mkdir(outputSvgDir, { recursive: true });
             // fetch each badge
             const paths = yield Promise.all(validBadges.map((b, i) => __awaiter(this, void 0, void 0, function* () { return fetchAndWriteBadge(b, path.join(outputSvgDir, `badge-${i}`)); })));
-            // zip the arrays and filter out null paths
             const inputPathsAndUrls = validBadges
+                // zip the arrays and filter out null paths
                 .filter((d, i) => paths[i] !== null)
+                // generate the new URLs we should point the badges to
                 .map((d, i) => {
-                return { url: d, path: urlLib.resolve(urlBase, paths[i]) };
+                return {
+                    url: d,
+                    path: generateBadgeUrl(template, repo, branch, path.dirname(paths[i]), path.basename(paths[i]))
+                };
             });
             // replace all instances of each badge url with the new path
             const output = replaceBadgeUrls(input, inputPathsAndUrls);
@@ -2330,6 +2354,49 @@ module.exports = require("util");
 
 /***/ }),
 
+/***/ 685:
+/***/ (function(module) {
+
+var nargs = /\{([0-9a-zA-Z_]+)\}/g
+
+module.exports = template
+
+function template(string) {
+    var args
+
+    if (arguments.length === 2 && typeof arguments[1] === "object") {
+        args = arguments[1]
+    } else {
+        args = new Array(arguments.length - 1)
+        for (var i = 1; i < arguments.length; ++i) {
+            args[i - 1] = arguments[i]
+        }
+    }
+
+    if (!args || !args.hasOwnProperty) {
+        args = {}
+    }
+
+    return string.replace(nargs, function replaceArg(match, i, index) {
+        var result
+
+        if (string[index - 1] === "{" &&
+            string[index + match.length] === "}") {
+            return i
+        } else {
+            result = args.hasOwnProperty(i) ? args[i] : null
+            if (result === null || result === undefined) {
+                return ""
+            }
+
+            return result
+        }
+    })
+}
+
+
+/***/ }),
+
 /***/ 747:
 /***/ (function(module) {
 
@@ -2561,6 +2628,155 @@ module.exports = require("url");
  */
 
 module.exports = __webpack_require__(512)
+
+
+/***/ }),
+
+/***/ 882:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+var template = __webpack_require__(685)
+
+var whitespaceRegex = /["'\\\n\r\u2028\u2029]/g
+var nargs = /\{[0-9a-zA-Z]+\}/g
+
+var replaceTemplate =
+"    var args\n" +
+"    var result\n" +
+"    if (arguments.length === 1 && typeof arguments[0] === \"object\") {\n" +
+"        args = arguments[0]\n" +
+"    } else {\n" +
+"        args = arguments" +
+"    }\n\n" +
+"    if (!args || !(\"hasOwnProperty\" in args)) {\n" +
+"       args = {}\n" +
+"    }\n\n" +
+"    return {0}"
+
+var literalTemplate = "\"{0}\""
+var argTemplate = "(result = args.hasOwnProperty(\"{0}\") ? " +
+    "args[\"{0}\"] : null, \n        " +
+    "(result === null || result === undefined) ? \"\" : result)"
+
+module.exports = compile
+
+function compile(string, inline) {
+    var replacements = string.match(nargs) || []
+    var interleave = string.split(nargs)
+    var replace = []
+
+    for (var i = 0; i < interleave.length; i++) {
+        var current = interleave[i]
+        var replacement = replacements[i]
+        var escapeLeft = current.charAt(current.length - 1)
+        var escapeRight = (interleave[i + 1] || "").charAt(0)
+
+        if (replacement) {
+            replacement = replacement.substring(1, replacement.length - 1)
+        }
+
+        if (escapeLeft === "{" && escapeRight === "}") {
+            replace.push(current + replacement)
+        } else {
+            replace.push(current)
+            if (replacement) {
+                replace.push({ name: replacement })
+            }
+        }
+    }
+
+    var prev = [""]
+
+    for (var j = 0; j < replace.length; j++) {
+        var curr = replace[j]
+
+        if (String(curr) === curr) {
+            var top = prev[prev.length - 1]
+
+            if (String(top) === top) {
+                prev[prev.length - 1] = top + curr
+            } else {
+                prev.push(curr)
+            }
+        } else {
+            prev.push(curr)
+        }
+    }
+
+    replace = prev
+
+    if (inline) {
+        for (var k = 0; k < replace.length; k++) {
+            var token = replace[k]
+
+            if (String(token) === token) {
+                replace[k] = template(literalTemplate, escape(token))
+            } else {
+                replace[k] = template(argTemplate, escape(token.name))
+            }
+        }
+
+        var replaceCode = replace.join(" +\n    ")
+        var compiledSource = template(replaceTemplate, replaceCode)
+        return new Function(compiledSource)
+    }
+
+    return function template() {
+        var args
+
+        if (arguments.length === 1 && typeof arguments[0] === "object") {
+            args = arguments[0]
+        } else {
+            args = arguments
+        }
+
+        if (!args || !("hasOwnProperty" in args)) {
+            args = {}
+        }
+
+        var result = []
+
+        for (var i = 0; i < replace.length; i++) {
+            if (i % 2 === 0) {
+                result.push(replace[i])
+            } else {
+                var argName = replace[i].name
+                var arg = args.hasOwnProperty(argName) ? args[argName] : null
+                if (arg !== null || arg !== undefined) {
+                    result.push(arg)
+                }
+            }
+        }
+
+        return result.join("")
+    }
+}
+
+function escape(string) {
+    string = '' + string
+    return string.replace(whitespaceRegex, escapedWhitespace)
+}
+
+function escapedWhitespace(character) {
+    // Escape all characters not included in SingleStringCharacters and
+    // DoubleStringCharacters on
+    // http://www.ecma-international.org/ecma-262/5.1/#sec-7.8.4
+    switch (character) {
+        case '"':
+        case "'":
+        case '\\':
+            return '\\' + character
+        // Four possible LineTerminator characters need to be escaped:
+        case '\n':
+            return '\\n'
+        case '\r':
+            return '\\r'
+        case '\u2028':
+            return '\\u2028'
+        case '\u2029':
+            return '\\u2029'
+    }
+}
 
 
 /***/ })

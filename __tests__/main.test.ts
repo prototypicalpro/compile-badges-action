@@ -1,5 +1,6 @@
 import run, {
   scanForBadges,
+  generateBadgeUrl,
   replaceBadgeUrls,
   filterBadgeUrls,
   fetchAndWriteBadge,
@@ -10,6 +11,7 @@ import * as tmp from 'tmp'
 import * as path from 'path'
 import * as fs from 'fs'
 import rimraf from 'rimraf'
+import compile from 'string-template/compile'
 
 function getInputName(input: string): string {
   return `INPUT_${input.replace(/ /g, '_').toUpperCase()}`
@@ -112,6 +114,62 @@ describe('scanForBadges', () => {
           'https://anotherlink.gov'
         ])
         .reduce((acc, val) => acc.concat(val), [])
+    )
+  })
+})
+
+describe('generateBadgeUrl', () => {
+  it('templates a badge URL', () => {
+    const template = compile('https://my.cdn/{repo}/{branch}/{path}/{badge}')
+    const res = generateBadgeUrl(
+      template,
+      'my-repo',
+      'my-branch',
+      'my-path',
+      'my-badge'
+    )
+    expect(res).toEqual('https://my.cdn/my-repo/my-branch/my-path/my-badge')
+  })
+
+  it('handles nested paths', () => {
+    const template = compile('https://my.cdn/{repo}/{branch}/{path}/{badge}')
+    const res = generateBadgeUrl(
+      template,
+      'my-repo',
+      'my-branch',
+      'my-path/other-path',
+      'my-badge'
+    )
+    expect(res).toEqual(
+      'https://my.cdn/my-repo/my-branch/my-path/other-path/my-badge'
+    )
+  })
+
+  it('handles trailing and preceding slashes', () => {
+    const template = compile('https://my.cdn/{repo}/{branch}/{path}/{badge}')
+    const res = generateBadgeUrl(
+      template,
+      'my-repo',
+      'my-branch',
+      './my-path/other-path/',
+      'my-badge'
+    )
+    expect(res).toEqual(
+      'https://my.cdn/my-repo/my-branch/my-path/other-path/my-badge'
+    )
+  })
+
+  it('handles trailing and preceding backslashes', () => {
+    const template = compile('https://my.cdn/{repo}/{branch}/{path}/{badge}')
+    const res = generateBadgeUrl(
+      template,
+      'my-repo',
+      'my-branch',
+      '\\my-path\\other-path\\',
+      'my-badge'
+    )
+    expect(res).toEqual(
+      'https://my.cdn/my-repo/my-branch/my-path/other-path/my-badge'
     )
   })
 })
@@ -305,6 +363,8 @@ describe('run', () => {
     )
     process.env[getInputName(Inputs.OUTPUT_MARKDOWN_FILE)] = filePath
     process.env[getInputName(Inputs.OUTPUT_IMG_DIR)] = '__tests__/test-svg-dir'
+    process.env[getInputName(Inputs.URL)] =
+      'https://raw.githubusercontent.com/{repo}/{branch}/{path}/{badge}'
   })
 
   afterEach(async () => {
@@ -401,6 +461,14 @@ describe('run', () => {
 
   it('throws if an invalid branch is supplied', async () => {
     process.env[getInputName(Inputs.CUR_BRANCH)] = ''
+
+    await run()
+
+    expect(process.exitCode).not.toEqual(0)
+  })
+
+  it('throws if no url is supplied', async () => {
+    delete process.env[getInputName(Inputs.URL)]
 
     await run()
 

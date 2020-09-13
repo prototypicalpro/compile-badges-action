@@ -77,6 +77,8 @@ describe('integration', () => {
     )
     baseEnv[getInputName(Inputs.OUTPUT_MARKDOWN_FILE)] = filePath
     baseEnv[getInputName(Inputs.OUTPUT_IMG_DIR)] = 'test-svg-dir'
+    baseEnv[getInputName(Inputs.URL)] =
+      'https://raw.githubusercontent.com/{repo}/{branch}/{path}/{badge}'
   })
 
   afterEach(async () => {

@@ -60,6 +60,32 @@ This workflow will then download and save each badge to a `readme` folder in the
 ```
 And you're all set!
 
+### Usage With a Custom CDN
+
+If you would like to use a custom CDN instead of `githubusercontent` (such as [githack](https://raw.githack.com/)), you can use the `badge_url_template` input to adjust how badge URLs are compiled:
+
+```yaml
+# ...
+- name: Compile Badges
+  uses: prototypicalpro/compile-badges@v1
+  with:
+    input_markdown_file: README.md
+    output_markdown_file: README-compiled.md
+    badge_url_template: https://raw.githack.com/{repo}/{branch}/{path}/{badge}
+# ...
+```
+
+The above settings will generate the following markdown output:
+
+```md
+<!-- badge-compile -->
+![a badge](https://raw.githack.com/<user>/<repo>/<branch>/readme/badge-0.svg)
+[![another badge with a link](https://raw.githack.com/<user>/<repo>/<branch>/readme/badge-1.svg)](https://my-project.com)
+<!-- badge-compile-stop -->
+```
+
+More information about this property can be found in the [Configuration](#configuration) documentation below.
+
 ## Configuration
 
 This action takes the following inputs:
@@ -96,6 +122,23 @@ This action takes the following inputs:
     #
     # Default: ${{ github.ref }}
     current_branch: ''
+
+    # The template string used to generate URLs to the compiled badges.
+    # You can use this field to adjust which CDN this action should
+    # compile for (ex. githack instead of githubusercontent).
+    #
+    # This template is populated using the string-template library
+    # (https://www.npmjs.com/package/string-template) with the following
+    # available varibles:
+    # - `repo`: The string from the `current_repository` input.
+    # - `branch`: The branch name parsed from the `current_branch` input.
+    # - `path`: The path supplied by `ouput_image_dir` where badges
+    #    are being stored. This path is automatically stripped of trailing
+    #    slashes.
+    # - `badge`: The filename of the compiled badge output.
+    #
+    # Default: https://raw.githubusercontent.com/{repo}/{branch}/{path}/{badge}
+    badge_url_template: ''
 ```
 
 ## Example

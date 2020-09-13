@@ -6,6 +6,7 @@ import fetch from 'node-fetch'
 import * as path from 'path'
 import * as mime from 'mime-types'
 import * as urlLib from 'url'
+import compile from 'string-template/compile'
 
 const StreamPipeline = promisify(pipeline)
 
@@ -14,7 +15,8 @@ export const enum Inputs {
   OUTPUT_MARKDOWN_FILE = 'output_markdown_file',
   OUTPUT_IMG_DIR = 'output_image_dir',
   CUR_REPO = 'current_repository',
-  CUR_BRANCH = 'current_branch'
+  CUR_BRANCH = 'current_branch',
+  URL = 'badge_url_template'
 }
 
 // An Electron 2.0 running on Linux, so shields.io doesn't block us
@@ -82,6 +84,32 @@ export function filterBadgeUrls(urls: string[]): string[] {
 }
 
 /**
+ * Generate a new path for a badge based on the provided options
+ *
+ * @param template The URL template to build the URL with.
+ * @param repo The current repository name
+ * @param branch The current branch name (not ref)
+ * @param badgePath The path badges are being written to
+ * @param badge The filename of the badge being written
+ */
+export function generateBadgeUrl(
+  template: StringTemplate.Template,
+  repo: string,
+  branch: string,
+  badgePath: string,
+  badge: string
+): string {
+  return template({
+    repo,
+    branch,
+    path: path.posix
+      .normalize(path.posix.join(...badgePath.split(path.sep)))
+      .replace(/(\/$)|(^\.?\/)/g, ''),
+    badge
+  })
+}
+
+/**
  * Replace all instances of a markdown image URL (ex. ![](image.png))
  * with a respective file path. Also strips whitespace from the beginning
  * and end of the URL.
@@ -109,7 +137,7 @@ export function replaceBadgeUrls(
  *
  * @param url The URL to fetch the image from.
  * @param filepath The filepath to write the image too, minus the extention
- * @returns the full path of the fetched file
+ * @returns the relative path of the fetched file
  */
 export async function fetchAndWriteBadge(
   url: string,
@@ -155,8 +183,7 @@ export default async function run(): Promise<void> {
     const ref = core.getInput(Inputs.CUR_BRANCH, {required: true})
     const branch = ref.split('/').pop()
     if (!branch) throw new Error(`Could not parse supplied ref "${ref}"`)
-    // generate the base URL where all realative paths will be joined with
-    const urlBase = `https://raw.githubusercontent.com/${repo}/${branch}/`
+    const template = compile(core.getInput(Inputs.URL, {required: true}))
     // read the input file
     const input = await fs.promises.readFile(inputFile, 'utf-8')
     // scan it for relavant links
@@ -177,11 +204,21 @@ export default async function run(): Promise<void> {
         fetchAndWriteBadge(b, path.join(outputSvgDir, `badge-${i}`))
       )
     )
-    // zip the arrays and filter out null paths
     const inputPathsAndUrls = validBadges
+      // zip the arrays and filter out null paths
       .filter((d, i) => paths[i] !== null)
+      // generate the new URLs we should point the badges to
       .map((d, i) => {
-        return {url: d, path: urlLib.resolve(urlBase, paths[i] as string)}
+        return {
+          url: d,
+          path: generateBadgeUrl(
+            template,
+            repo,
+            branch,
+            path.dirname(paths[i] as string),
+            path.basename(paths[i] as string)
+          )
+        }
       })
     // replace all instances of each badge url with the new path
     const output = replaceBadgeUrls(

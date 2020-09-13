@@ -30,6 +30,24 @@ inputs:
       generate URLs to raw.githubusercontent.com from a relative path in
       the repository. It is recommended this be left as the default value.
     default: ${{ github.ref }}
+  badge_url_template:
+    required: false
+    description: |
+      The template string used to generate URLs to the compiled badges.
+      You can use this field to adjust which CDN this action should
+      compile for (ex. githack instead of githubusercontent).
+
+      This template is populated using the string-template library
+      (https://www.npmjs.com/package/string-template) with the following
+      available varibles:
+       - `repo`: The string from the `current_repository` input.
+       - `branch`: The branch name parsed from the `current_branch` input.
+       - `path`: The path supplied by `ouput_image_dir` where badges
+       are being stored. This path is automatically stripped of trailing
+       slashes.
+       - `badge`: The filename of the compiled badge output.
+    default: https://raw.githubusercontent.com/{repo}/{branch}/{path}/{badge}
+
 runs:
   using: 'node12'
   main: 'dist/index.js'
