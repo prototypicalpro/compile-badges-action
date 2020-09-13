@@ -189,7 +189,7 @@ function generateBadgeUrl(template, repo, branch, badgePath, badge) {
         repo,
         branch,
         path: path.posix
-            .normalize(path.posix.join(...badgePath.split(path.sep)))
+            .join(...badgePath.split(path.win32.sep))
             .replace(/(\/$)|(^\.?\/)/g, ''),
         badge
     });
