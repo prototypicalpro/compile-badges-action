@@ -20,16 +20,23 @@ inputs:
     required: false
     description: |
       The current repository in owner/name format. This value is used to
-      generate URLs to raw.githubusercontent.com from a relative path in
+      generate URLs to raw.githack.com from a relative path in
       the repository. It is recommended this be left as the default value.
     default: ${{ github.repository }}
   current_branch:
     required: false
     description: |
       The current branch/ref in github.ref format. This value is used to
-      generate URLs to raw.githubusercontent.com from a relative path in
+      generate URLs to raw.githack.com from a relative path in
       the repository. It is recommended this be left as the default value.
     default: ${{ github.ref }}
+  cdn:
+    required: false
+    description: |
+      Use githack's CloudFlare CDN for caching of provided badges.
+      This might cause delays and changes are not immediately visible.
+      The generated URLs will contain rawcdn.githack.com as source domain.
+    default: ''
 runs:
   using: 'node12'
   main: 'dist/index.js'

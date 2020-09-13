@@ -317,7 +317,7 @@ describe('run', () => {
     )
   })
 
-  it('replaces link in a markdown document with a githubusercontent url', async () => {
+  it('replaces link in a markdown document with a githack url', async () => {
     const scope = nock('https://img.shields.io')
       .get('/badge/%E2%9C%85-RepolinterAction-black?style=flat-square')
       .replyWithFile(200, svgInPath, {'content-type': 'image/svg+xml'})
@@ -340,11 +340,38 @@ describe('run', () => {
     expect(actualSplit).toMatchObject([
       expect.stringContaining('<!-- badge-compile -->'),
       expect.stringContaining(
-        '![alt text](https://raw.githubusercontent.com/testowner/testrepo/main/__tests__/test-svg-dir/badge-0.svg)'
+        '![alt text](https://raw.githack.com/testowner/testrepo/main/__tests__/test-svg-dir/badge-0.svg)'
       ),
       expect.stringContaining('<!-- badge-compile-stop -->')
     ])
     expect(actualSvg).toEqual(expectedSvg)
+    expect(process.exitCode).toBeFalsy()
+  })
+
+  it('replaces link in a markdown document with a CDN githack url', async () => {
+    process.env[getInputName(Inputs.USE_CDN)] = 'true'
+    process.env[getInputName(Inputs.OUTPUT_IMG_DIR)] = '__tests__/test-svg-cdn-dir'
+
+    const scope = nock('https://img.shields.io')
+      .get('/badge/%E2%9C%85-RepolinterAction-black?style=flat-square')
+      .replyWithFile(200, svgInPath, {'content-type': 'image/svg+xml'})
+
+    await run()
+
+    const actual = await fs.promises.readFile(
+      process.env[getInputName(Inputs.OUTPUT_MARKDOWN_FILE)] as string,
+      'utf-8'
+    )
+
+    // deal with funky windows newlines
+    const actualSplit = actual.split('\n').filter(s => s)
+    expect(actualSplit).toMatchObject([
+      expect.stringContaining('<!-- badge-compile -->'),
+      expect.stringContaining(
+        '![alt text](https://rawcdn.githack.com/testowner/testrepo/main/__tests__/test-svg-cdn-dir/badge-0.svg)'
+      ),
+      expect.stringContaining('<!-- badge-compile-stop -->')
+    ])
     expect(process.exitCode).toBeFalsy()
   })
 

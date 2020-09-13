@@ -239,11 +239,16 @@ function run() {
             const outputSvgDir = core.getInput("output_image_dir" /* OUTPUT_IMG_DIR */, { required: true });
             const repo = core.getInput("current_repository" /* CUR_REPO */, { required: true });
             const ref = core.getInput("current_branch" /* CUR_BRANCH */, { required: true });
+            const cdn = String(core.getInput("cdn" /* USE_CDN */));
+            let domain = 'raw.githack.com';
+            if (cdn.toLowerCase() == 'true') {
+                domain = 'rawcdn.githack.com';
+            }
             const branch = ref.split('/').pop();
             if (!branch)
                 throw new Error(`Could not parse supplied ref "${ref}"`);
             // generate the base URL where all realative paths will be joined with
-            const urlBase = `https://raw.githubusercontent.com/${repo}/${branch}/`;
+            const urlBase = `https://${domain}/${repo}/${branch}/`;
             // read the input file
             const input = yield fs.promises.readFile(inputFile, 'utf-8');
             // scan it for relavant links

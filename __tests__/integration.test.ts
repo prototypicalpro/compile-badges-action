@@ -101,7 +101,7 @@ describe('integration', () => {
     expect(actualSplit).toMatchObject([
       expect.stringContaining('<!-- badge-compile -->'),
       expect.stringContaining(
-        '![alt text](https://raw.githubusercontent.com/testowner/testrepo/main/test-svg-dir/badge-0.svg)'
+        '![alt text](https://raw.githack.com/testowner/testrepo/main/test-svg-dir/badge-0.svg)'
       ),
       expect.stringContaining('<!-- badge-compile-stop -->')
     ])

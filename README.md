@@ -40,6 +40,7 @@ jobs:
         with:
           input_markdown_file: README.md
           output_markdown_file: README-compiled.md
+          cdn: true
       - name: Push To Master
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
@@ -47,14 +48,14 @@ jobs:
           file_pattern: README-compiled.md readme/*
 
 ```
-This workflow will then download and save each badge to a `readme` folder in the current repository. Once this is complete, the action will replace the badge URLs in the README with ones pointing to githubusercontent.com. Finally, this workflow will use [stefanzweifel/git-auto-commit-action](https://github.com/stefanzweifel/git-auto-commit-action) to commit the new markdown file and downloaded badges to the current branch. Note that this action only modifies the local filesystem, and it is up to the workflow creator to ensure the changes end up in source control.
+This workflow will then download and save each badge to a `readme` folder in the current repository. Once this is complete, the action will replace the badge URLs in the README with ones pointing to githack.com. Finally, this workflow will use [stefanzweifel/git-auto-commit-action](https://github.com/stefanzweifel/git-auto-commit-action) to commit the new markdown file and downloaded badges to the current branch. Note that this action only modifies the local filesystem, and it is up to the workflow creator to ensure the changes end up in source control.
 
  The final result is a `README-compiled.md` file that looks like so:
 ```markdown
 ...
 <!-- badge-compile -->
-![a badge](https://raw.githubusercontent.com/<user>/<repo>/<branch>/readme/badge-0.svg)
-[![another badge with a link](https://raw.githubusercontent.com/<user>/<repo>/<branch>/readme/badge-1.svg)](https://my-project.com)
+![a badge](https://rawcdn.githack.com/<user>/<repo>/<branch>/readme/badge-0.svg)
+[![another badge with a link](https://rawcdn.githack.com/<user>/<repo>/<branch>/readme/badge-1.svg)](https://my-project.com)
 <!-- badge-compile-stop -->
 ...
 ```
@@ -84,18 +85,23 @@ This action takes the following inputs:
     output_image_dir: ''
 
     # The current repository in owner/name format. This value is used to
-    # generate URLs to raw.githubusercontent.com from a relative path in
+    # generate URLs to raw.githack.com from a relative path in
     # the repository. It is recommended this be left as the default value.
     #
     # Default: ${{ github.repository }}
     output_image_dir: ''
 
     # The current branch/ref in github.ref format. This value is used to
-    # generate URLs to raw.githubusercontent.com from a relative path in
+    # generate URLs to raw.githack.com from a relative path in
     # the repository. It is recommended this be left as the default value.
     #
     # Default: ${{ github.ref }}
     current_branch: ''
+
+    # Use githack's CloudFlare CDN for caching of provided badges.
+    # This might cause delays and changes are not immediately visible.
+    # The generated URLs will contain rawcdn.githack.com as source domain.
+    cdn: false
 ```
 
 ## Example

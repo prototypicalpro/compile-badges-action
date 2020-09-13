@@ -14,7 +14,8 @@ export const enum Inputs {
   OUTPUT_MARKDOWN_FILE = 'output_markdown_file',
   OUTPUT_IMG_DIR = 'output_image_dir',
   CUR_REPO = 'current_repository',
-  CUR_BRANCH = 'current_branch'
+  CUR_BRANCH = 'current_branch',
+  USE_CDN = 'cdn'
 }
 
 // An Electron 2.0 running on Linux, so shields.io doesn't block us
@@ -153,10 +154,15 @@ export default async function run(): Promise<void> {
     const outputSvgDir = core.getInput(Inputs.OUTPUT_IMG_DIR, {required: true})
     const repo = core.getInput(Inputs.CUR_REPO, {required: true})
     const ref = core.getInput(Inputs.CUR_BRANCH, {required: true})
+    const cdn = String(core.getInput(Inputs.USE_CDN))
+    let domain = 'raw.githack.com'
+    if (cdn.toLowerCase() == 'true') {
+      domain = 'rawcdn.githack.com'
+    }
     const branch = ref.split('/').pop()
     if (!branch) throw new Error(`Could not parse supplied ref "${ref}"`)
     // generate the base URL where all realative paths will be joined with
-    const urlBase = `https://raw.githubusercontent.com/${repo}/${branch}/`
+    const urlBase = `https://${domain}/${repo}/${branch}/`
     // read the input file
     const input = await fs.promises.readFile(inputFile, 'utf-8')
     // scan it for relavant links
