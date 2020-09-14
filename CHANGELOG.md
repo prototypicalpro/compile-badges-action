@@ -1,3 +1,15 @@
+# [1.1.0](https://github.com/prototypicalpro/compile-badges-action/compare/v1.0.3...v1.1.0) (2020-09-14)
+
+
+### Bug Fixes
+
+* fix path parsing in generateBadgeUrl ([2981bb8](https://github.com/prototypicalpro/compile-badges-action/commit/2981bb8a6ddf9ba3b33702665c0bc6dad417310a))
+
+
+### Features
+
+* add badge_url_template input to allow for custom github CDNs ([2762305](https://github.com/prototypicalpro/compile-badges-action/commit/27623051c0cfd1387455e04c59565a2a6629b711))
+
 ## [1.0.3](https://github.com/prototypicalpro/compile-badges-action/compare/v1.0.2...v1.0.3) (2020-09-12)
 
 
