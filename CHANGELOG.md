@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/prototypicalpro/compile-badges-action/compare/v1.1.0...v1.1.1) (2020-09-22)
+
+
+### Bug Fixes
+
+* upgrade dependencies ([e7e0c53](https://github.com/prototypicalpro/compile-badges-action/commit/e7e0c5365d22ad91d09c4737e7772ff68464bd80))
+
 # [1.1.0](https://github.com/prototypicalpro/compile-badges-action/compare/v1.0.3...v1.1.0) (2020-09-14)
 
 
